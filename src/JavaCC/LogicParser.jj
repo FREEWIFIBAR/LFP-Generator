@@ -1,0 +1,311 @@
+options {
+    STATIC = false;
+}
+
+PARSER_BEGIN(LogicParser)
+
+package JavaCC;
+
+import java.util.List;
+import java.util.ArrayList;
+
+import AST.ASTNode;
+import AST.AndNode;
+import AST.OrNode;
+import AST.NotNode;
+import AST.ImplNode;
+import AST.EquivNode;
+import AST.IdentifierNode;
+import AST.BooleanNode;
+
+public class LogicParser {
+
+    public static void main(String[] args)
+        throws Exception {
+
+        LogicParser parser =
+            new LogicParser(
+                new java.io.FileInputStream(args[0])
+            );
+
+        List<ASTNode> formulas =
+            parser.Teoria();
+
+        for (ASTNode n : formulas) {
+
+            System.out.println(n);
+        }
+    }
+}
+
+PARSER_END(LogicParser)
+
+SKIP :
+{
+    " "
+|   "\t"
+|   "\n"
+|   "\r"
+}
+
+TOKEN :
+{
+    < NAME: "name" >
+|
+    < IMPORT: "import" >
+|
+    < FORMULAS: "formulas" >
+|
+    < TRUE: "true" >
+|
+    < FALSE: "false" >
+|
+    < NOT: "~" >
+|
+    < AND: "^" | "and" >
+|
+    < OR: "v" | "or" >
+|
+    < IMPL: "->" | "impl" >
+|
+    < EQUIV: "<->" | "equiv" >
+|
+    < LPAREN: "(" >
+|
+    < RPAREN: ")" >
+|
+    < SEMICOLON: ";" >
+|
+    < COLON: ":" >
+|
+    < COMMA: "," >
+|
+    < IDENTIFIER:
+        (["A"-"Z","a"-"z"])
+        (["A"-"Z","a"-"z","0"-"9"])*
+    >
+}
+
+List<ASTNode> Teoria() :
+{
+    List<ASTNode> formulas;
+}
+{
+    Nombre()
+
+    (
+        Importacion()
+    )*
+
+    formulas = Formulas()
+
+    <EOF>
+
+    {
+        return formulas;
+    }
+}
+
+void Nombre() :
+{}
+{
+    <NAME>
+    <IDENTIFIER>
+    <SEMICOLON>
+}
+
+void Importacion() :
+{}
+{
+    <IMPORT>
+
+    <IDENTIFIER>
+
+    (
+        <COMMA>
+        <IDENTIFIER>
+    )*
+
+    <SEMICOLON>
+}
+
+List<ASTNode> Formulas() :
+{
+    List<ASTNode> list =
+        new ArrayList<>();
+
+    ASTNode node;
+}
+{
+    <FORMULAS>
+    <COLON>
+
+    (
+        node = FBF()
+
+        {
+            list.add(node);
+        }
+
+        <SEMICOLON>
+    )*
+
+    {
+        return list;
+    }
+}
+
+ASTNode FBF() :
+{
+    ASTNode left;
+    ASTNode right;
+}
+{
+    left = Impl()
+
+    (
+        <EQUIV>
+
+        right = FBF()
+
+        {
+            left =
+                new EquivNode(left, right);
+        }
+    )?
+
+    {
+        return left;
+    }
+}
+
+ASTNode Impl() :
+{
+    ASTNode left;
+    ASTNode right;
+}
+{
+    left = Or()
+
+    (
+        <IMPL>
+
+        right = Impl()
+
+        {
+            left =
+                new ImplNode(left, right);
+        }
+    )?
+
+    {
+        return left;
+    }
+}
+
+ASTNode Or() :
+{
+    ASTNode left;
+    ASTNode right;
+}
+{
+    left = And()
+
+    (
+        <OR>
+
+        right = Or()
+
+        {
+            left =
+                new OrNode(left, right);
+        }
+    )?
+
+    {
+        return left;
+    }
+}
+
+ASTNode And() :
+{
+    ASTNode left;
+    ASTNode right;
+}
+{
+    left = Not()
+
+    (
+        <AND>
+
+        right = And()
+
+        {
+            left =
+                new AndNode(left, right);
+        }
+    )?
+
+    {
+        return left;
+    }
+}
+
+ASTNode Not() :
+{
+    ASTNode node;
+}
+{
+    (
+        <NOT>
+
+        node = Not()
+
+        {
+            return new NotNode(node);
+        }
+    )
+|
+    node = Primario()
+
+    {
+        return node;
+    }
+}
+
+ASTNode Primario() :
+{
+    ASTNode node;
+    Token t;
+}
+{
+    (
+        <LPAREN>
+
+        node = FBF()
+
+        <RPAREN>
+
+        {
+            return node;
+        }
+    )
+|
+    t = <IDENTIFIER>
+
+    {
+        return new IdentifierNode(t.image);
+    }
+|
+    <TRUE>
+
+    {
+        return new BooleanNode(true);
+    }
+|
+    <FALSE>
+
+    {
+        return new BooleanNode(false);
+    }
+}

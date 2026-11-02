@@ -1,0 +1,9 @@
+name test;
+
+import logic, algebra;
+
+formulas:
+    a -> b;
+    ~(a v b);
+    (a ^ b) -> c;
+    (p <-> q);

@@ -1,0 +1,48 @@
+Teoria ::= Nombre Importaciones Formulas
+
+Nombre ::= 'name' IDENTIFIER ';'
+
+Importaciones ::= Importacion Importaciones
+                | ε
+
+Importacion ::= 'import' ListaIds ';'
+
+ListaIds ::= IDENTIFIER ListaIds'
+
+ListaIds' ::= ',' IDENTIFIER ListaIds'
+            | ε
+
+Formulas ::= 'formulas' ':' ListaFormulas
+
+ListaFormulas ::= FBF ';' ListaFormulas
+                | ε
+
+FBF ::= Impl FBF'
+
+FBF' ::= ('<->' | 'equiv') FBF
+       | ε
+
+Impl ::= Or Impl'
+
+Impl' ::= ('->' | 'impl') Impl
+        | ε
+
+Or ::= And Or'
+
+Or' ::= ('v' | 'or') Or
+      | ε
+
+And ::= Not And'
+
+And' ::= ('^' | 'and') And
+       | ε
+
+Not ::= '~' Not
+      | Primario
+
+Primario ::= '(' FBF ')'
+           | Proposicion
+
+Proposicion ::= TRUE
+              | FALSE
+              | IDENTIFIER
